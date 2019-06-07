@@ -1,4 +1,4 @@
-package ThreadFileWorck;
+package mainPack.Utility;
 
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -36,7 +37,7 @@ import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileSystemView;
 
-public class Utils {
+public class JCrutchUtils {
 	public static final BasicStroke stroke = new BasicStroke(4);
 	public static final Color ALPHA = new Color(0, true);
 
@@ -48,14 +49,6 @@ public class Utils {
 	static GraphicsDevice[] screens;
 	static Toolkit tools = Toolkit.getDefaultToolkit();
 	public static Random random = new Random();
-
-	public static void setSystemLookAndFeel() {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e1) {
-			e1.printStackTrace();
-		}
-	}
 
 	public static boolean getRandom(double chanceMul) {
 		return ((random.nextDouble() * 100) < chanceMul);
@@ -284,11 +277,9 @@ public class Utils {
 	}
 
 	public static boolean isSubPath(String par, String ch) {
-
 		if (ch.length() < par.length()) {
 			return false;
 		}
-
 		if (ch.substring(0, par.length()).equals(par)) {
 			return true;
 		}
@@ -336,7 +327,7 @@ public class Utils {
 		return b + c * (33 * tc * ts + -106 * ts * ts + 126 * tc + -67 * ts + 15 * t);
 	}
 
-	// Trinagometry
+	// Some Math
 
 	public static final double shortAngleDist(double a0, double a1) {
 		double max = Math.PI * 2;
@@ -483,7 +474,7 @@ public class Utils {
 				comp.getModel().setArmed(true);
 				comp.getModel().setPressed(true);
 
-				Utils.sleep(delay);
+				JCrutchUtils.sleep(delay);
 
 				comp.setSelected(false);
 				comp.getModel().setArmed(false);
@@ -501,30 +492,18 @@ public class Utils {
 		t.setLayout(null);
 	}
 
-	public static Color colorToInt(int r, int g, int b, int a) {
-
-		return new Color(r, g, b, a);
-
-	}
-
 	public static boolean checkFile(String path) {
 		if (path == null || path.trim().isEmpty()) {
 			return false;
 		}
-		File f = new File(path);
-		if (f.exists() && f.canRead() && !f.isDirectory() && f.canWrite()) {
-			return true;
-		}
-		return false;
+		return checkFile(new File(path));
 
 	}
 
 	public static boolean checkFile(File f) {
 		if (f.exists() && f.canRead() && !f.isDirectory() && f.canWrite()) {
-
 			return true;
 		}
-
 		return false;
 
 	}
@@ -540,17 +519,17 @@ public class Utils {
 		switch (cycle) {
 
 		case 0:
-			return colorToInt(255, 0, a, alpha);
+			return new Color(255, 0, a, alpha);
 		case 1:
-			return colorToInt(prev, 0, 255, alpha);
+			return new Color(prev, 0, 255, alpha);
 		case 2:
-			return colorToInt(0, a, 255, alpha);
+			return new Color(0, a, 255, alpha);
 		case 3:
-			return colorToInt(0, 255, prev, alpha);
+			return new Color(0, 255, prev, alpha);
 		case 4:
-			return colorToInt(a, 255, 0, alpha);
+			return new Color(a, 255, 0, alpha);
 		case 5:
-			return colorToInt(255, prev, 0, alpha);
+			return new Color(255, prev, 0, alpha);
 
 		}
 		return new Color(0, 0, 0);
@@ -565,12 +544,12 @@ public class Utils {
 	}
 
 	public static String getExecuteName() {
-		return new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName();
+		return new File(JCrutchUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName();
 
 	}
 
 	public static File getExecuteFile() {
-		return new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+		return new File(JCrutchUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
 	}
 
@@ -659,7 +638,7 @@ public class Utils {
 
 			AudioFormat[] formats = dataLineInfo.getFormats();
 			for (final AudioFormat format : formats)
-				System.out.println("    " + format.toString());
+				System.out.println("  " + format.toString());
 		}
 	}
 
@@ -753,9 +732,7 @@ public class Utils {
 			return false;
 		}
 		for (int i = 0; i < a1.length; i++) {
-			System.out.println(a1[i] + " " + a2[i]);
 			if (a1[i] != a2[i]) {
-
 				return false;
 			}
 
@@ -764,8 +741,113 @@ public class Utils {
 
 	}
 
-	// File Text Worcking
-	
+	// File Text Working
+	public static byte getUTFCharLeng(int charHeader) {
+		int s = ((charHeader & 0xF0) >> 4);
+		if (s == 0xC) {
+			return 1;
+		}
+		if (s == 0xE) {
+			return 2;
+		}
+		if (s == 0xF) {
+			return 3;
+		}
+		return 0;
+	}
+
+	public static int findNLPrevs(long from, RandomAccessFile f) throws IOException {
+		int offset = 1;
+		while (from - offset > 0) {
+			f.seek(from - offset);
+			byte r = f.readByte();
+			if (r != 0x0D && r != 0x0A) {
+				break;
+			}
+			offset++;
+		}
+		return offset - 1;
+	}
+
+	public static byte[] readUTFChar(RandomAccessFile f) throws IOException {
+		byte charEnt = f.readByte();
+		byte extraCharLeng = getUTFCharLeng(charEnt);
+		byte[] out = new byte[extraCharLeng + 1];
+		out[0] = charEnt;
+		for (int i = 1; i < extraCharLeng + 1; i++) {
+			out[i] = f.readByte();
+		}
+		return out;
+
+	}
+
+	// Some byte things
+	public static byte[] toByteArray(long value, int byteleng) {
+		byte[] data = new byte[byteleng];
+		for (int i = 0; i < data.length; i++) {
+			data[(data.length - 1) - i] = (byte) (value >> i * 8 & 0xFF);
+		}
+		return data;
+	}
+
+	public static long fromByteArray(byte[] data, int bytesLeng) {
+		long val = 0;
+		for (int i = 0; i < data.length; i++) {
+			val <<= 8;
+			val |= data[i] & 0xFF;
+		}
+		return val;
+	}
+
+	public static long fromByteArray(byte[] data, int offset, int bytesLeng) {
+		long val = 0;
+		for (int i = 0; i < data.length; i++) {
+			val <<= 8;
+			val |= data[i] & 0xFF;
+		}
+		return val;
+	}
+
+	public static String printBinary(long val, int bitsCount) {
+		StringBuffer outBuffer = new StringBuffer();
+		for (int i = 0; i < bitsCount; i++) {
+			if (i != 0 && i % 8 == 0) {
+				outBuffer.append("_");
+			}
+			outBuffer.append(val >> (bitsCount - 1) - i & 1);
+		}
+		return outBuffer.toString();
+	}
+
+	public class TimeTracer {
+		long time;
+		String nam;
+
+		public TimeTracer(String name) {
+			time = System.currentTimeMillis();
+			nam = name;
+		}
+
+		public TimeTracer() {
+			time = System.currentTimeMillis();
+			nam = "No Name";
+		}
+
+		public final void finish() {
+			System.out.println("TimeTracer: " + nam);
+			System.out.println(System.currentTimeMillis() - time + ":Ms\n");
+		}
+
+	}
+
+	public static boolean getRandomChace(double chanceMul) {
+		return ((random.nextDouble() * 100) < chanceMul);
+
+	}
+
+	public static float getProcentageS(float val, float max) {
+		return 100f / (max / val);
+	}
 
 }
 //int ind = 1;
