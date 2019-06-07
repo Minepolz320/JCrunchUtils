@@ -1,7 +1,6 @@
-package mainPack.Utility;
+package ThreadFileWorck;
 
 import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -38,14 +37,9 @@ import javax.swing.UIManager;
 import javax.swing.filechooser.FileSystemView;
 
 public class JCrutchUtils {
-	public static final BasicStroke stroke = new BasicStroke(4);
+	static final int BUFFER_SIZE = 2048;
 	public static final Color ALPHA = new Color(0, true);
-
-	public static final Color ALPHA_2 = new Color(0, 0, 0, 100);
-
-	public static final Color FILL_DRAG_COLOR = new Color(255, 255, 255, 130);
 	public static final String[] Data_Size = { "B", "Kb", "Mb", "Gb" };
-
 	static GraphicsDevice[] screens;
 	static Toolkit tools = Toolkit.getDefaultToolkit();
 	public static Random random = new Random();
@@ -254,12 +248,6 @@ public class JCrutchUtils {
 	public static final void clearBG(Graphics g, Component com) {
 		Graphics2D gd = (Graphics2D) g;
 		gd.setBackground(ALPHA);
-		gd.clearRect(0, 0, com.getWidth(), com.getHeight());
-	}
-
-	public static final void clearBGN(Graphics g, Component com) {
-		Graphics2D gd = (Graphics2D) g;
-		gd.setBackground(ALPHA_2);
 		gd.clearRect(0, 0, com.getWidth(), com.getHeight());
 	}
 
@@ -847,6 +835,65 @@ public class JCrutchUtils {
 
 	public static float getProcentageS(float val, float max) {
 		return 100f / (max / val);
+	}
+
+	// Random Access file things
+
+	public static void cutOf(long from, long to, RandomAccessFile f) throws IOException {
+		cut(from, to - from, f);
+
+	}
+
+	// !!!!! Don t tested
+	public static void pushBytes(long pos, int count, RandomAccessFile f) throws IOException {
+
+		long byteCount = (f.length() - pos);
+
+		byte[] buffer = new byte[BUFFER_SIZE];
+		long filepos = f.length();
+
+		while (byteCount != 0) {
+			// how many bytes we can read
+
+			int bufferFill = BUFFER_SIZE;
+			if (byteCount < BUFFER_SIZE) {
+				bufferFill = (int) byteCount;
+			}
+			filepos -= bufferFill;
+
+			f.seek(filepos);
+			f.readFully(buffer, 0, bufferFill);
+			f.seek(filepos + count);
+			f.write(buffer, 0, bufferFill);
+			byteCount -= bufferFill;
+
+		}
+	}
+
+	public static void cut(long from, long bytecount, RandomAccessFile f) throws IOException {
+
+		System.out.println("From " + from + " Leng " + bytecount);
+
+		byte[] buffer = new byte[BUFFER_SIZE];
+
+		long summbytes = f.length() - bytecount - from;
+
+		long readPos = from + bytecount;
+		long writePos = from;
+
+		while (summbytes > 0) {
+			f.seek(readPos);
+			int readed = f.read(buffer);
+			readPos += readed;
+			summbytes -= readed;
+			f.seek(writePos);
+			f.write(buffer, 0, readed);
+			writePos += readed;
+
+		}
+
+		f.setLength(f.length() - bytecount);
+
 	}
 
 }
