@@ -1,4 +1,4 @@
-package ThreadFileWorck;
+package mainPack.Utility;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
@@ -44,142 +44,119 @@ public class JCrutchUtils {
 	static Toolkit tools = Toolkit.getDefaultToolkit();
 	public static Random random = new Random();
 
-	public static boolean getRandom(double chanceMul) {
-		return ((random.nextDouble() * 100) < chanceMul);
-
+	// TODO Graphics Things
+	////////////////////////////////////////////////////////////////////////////////////////
+	public static Color changeColorAlpha(Color t, int nAlpha) {
+		return new Color(t.getRed(), t.getGreen(), t.getBlue(), nAlpha);
 	}
 
-	public static String getTime(short minu) {
-		String formatH = "";
-		short min = (short) (minu % 60);
-		short hors = (short) (minu / 60);
-		if (hors > 0) {
-			formatH = hors + "|";
+	public static final Color getRandomColor() {
+		return new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255), 140);
+	}
+
+	public static Color getRgbMappedColor(short stepCount, int alpha) {
+		// 1530
+		short cycle = (short) (stepCount / 255 % 6);
+		short a = (short) (stepCount % 255);
+		short prev = (short) (255 - a);
+
+		switch (cycle) {
+
+		case 0:
+			return new Color(255, 0, a, alpha);
+		case 1:
+			return new Color(prev, 0, 255, alpha);
+		case 2:
+			return new Color(0, a, 255, alpha);
+		case 3:
+			return new Color(0, 255, prev, alpha);
+		case 4:
+			return new Color(a, 255, 0, alpha);
+		case 5:
+			return new Color(255, prev, 0, alpha);
+
 		}
-		return formatH + min;
+		return new Color(0, 0, 0);
 	}
 
-	public static Color getRandomColor(int minAlpha) {
+	public static Icon getMiniFileIcon(File f) {
+		Icon i = FileSystemView.getFileSystemView().getSystemIcon(f);
+		BufferedImage out = new BufferedImage(16, 16, BufferedImage.TYPE_4BYTE_ABGR);
+		i.paintIcon(null, out.getGraphics(), 0, 0);
 
-		return new Color(random.nextInt(255), //
-				random.nextInt(255), //
-				random.nextInt(255), //
-				random.nextInt(255 - minAlpha) + minAlpha);
+		return i;
 	}
 
-	public static float getProcentage(char[] rans, char[] in) {
-		float corr = 0;
+	public static int CalculateSolidPixels(BufferedImage img, int grAlpha) {
+		int solidPixels = 0;
+		int[] pixels = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
 
-		for (int i = 0; i < rans.length; i++) {
-			if (i < in.length) {
-				if (rans[i] == in[i]) {
-					corr++;
-				}
+		for (int i : pixels) {
+			int a = (i >> 24) & 0xff;
+			if (a > grAlpha) {
+				solidPixels++;
 			}
 		}
-		if (corr == 0) {
-			return 0;
-		}
-		float per = 100f / (rans.length / corr);
-		return per;
-
+		pixels = null;
+		return solidPixels;
 	}
 
-	public static final void DoBeep() {
-		tools.beep();
-	}
+	public static void dueImageVerySlow(BufferedImage in, BufferedImage out, Color tcolor) {
 
-	public static void updateScreens() {
-		screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+		int targ = tcolor.getRGB();
+		int width = in.getWidth();
+		int height = in.getHeight();
 
-	}
+		for (int col = 0; col < width; col++) {
+			for (int row = 0; row < height; row++) {
 
-	public static Rectangle getRandomScreenRect() {
-		if (screens != null) {
-			return screens[random.nextInt(screens.length)].getDefaultConfiguration().getBounds();
-		}
-		return null;
-	}
+				int color = in.getRGB(col, row);
 
-	public static void fadeToAlpha(DataBuffer imgData, byte sc) {
+				int a = (color >> 24) & 0xff;
+				int r = (color >> 16) & 0xff;
+				int g = (color >> 8) & 0xff;
+				int b = color & 0xff;
+				// Lums somsing magic shit and somsing else
+				int L = (int) (0.2126f * r + 0.7152f * g + 0.0722f * b);
 
-		for (int j = 0; j < imgData.getSize(); j++) {
-			int pixel = imgData.getElem(j);
+				r = L * (targ >> 16 & 0xff) / 255;
+				g = L * (targ >> 8 & 0xff) / 255;
+				b = L * (targ & 0xff) / 255;
 
-			int a = (pixel >> 24) & 0xff;
-			imgData.setElem(j, 0);
-			if (a != 0) {
-				int r = (pixel >> 16) & 0xff;
-				int g = (pixel >> 8) & 0xff;
-				int b = pixel & 0xff;
-				if (a < 50) {
-					imgData.setElem(j, 0);
-				} else {
-					imgData.setElem(j, ((a -= sc) << 24) | (r << 16) | (g << 8) | b);
-				}
+				int c = (a << 24) | (r << 16) | (g << 8) | b;
+
+				out.setRGB(col, row, c);
 
 			}
-
 		}
 	}
 
-	public static void closer(Closeable cl) {
-		try {
-			cl.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	public static final void clearBG(Graphics g, Component com) {
+		Graphics2D gd = (Graphics2D) g;
+		gd.setBackground(ALPHA);
+		gd.clearRect(0, 0, com.getWidth(), com.getHeight());
 	}
 
-	public static void popUP(Window w) {
-		w.setAlwaysOnTop(true);
-		w.setAlwaysOnTop(false);
+	public static final void clearBG(Graphics g, int x, int y, int w, int h) {
+		Graphics2D gd = (Graphics2D) g;
+		gd.setBackground(ALPHA);
+		gd.clearRect(x, y, w, h);
 	}
 
-	public static final int getRandomInBounds(int dest) {
-		return random.nextInt(dest) - random.nextInt(dest);
-	}
+	public static final BufferedImage ImageSetDue(BufferedImage image, Color color) {
 
-	public static void unlock(Object lock) {
-		synchronized (lock) {
-			lock.notify();
-		}
-	}
+		// fix this
+		// L = 0.2126*R + 0.7152*G + 0.0722*B
+		// so something like
+		// pictureR.set(col, row, new Color(255 * L/255, 153 * L/255, 51 * L/255));
 
-	public static void locker(Object lock, long delay) {
-
-		synchronized (lock) {
-			try {
-				lock.wait(delay);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	public static void locker(Object lock) {
-
-		synchronized (lock) {
-			try {
-				lock.wait();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	public static final double getAngleBetP(float x1, float y1, float x2, float y2) {
-		return Math.atan2(y1 - y2, x1 - x2);
-
-	}
-
-	public static int calculateTime(long fileSize, long readed, int speed) {
-		if (speed > 0) {
-			return (int) ((fileSize - readed) / speed);
-		}
-		return 0;
+		Graphics2D g = image.createGraphics();
+		g.drawImage(image, 0, 0, null);
+		g.setComposite(AlphaComposite.SrcAtop);
+		g.setColor(color);
+		g.fillRect(0, 0, image.getWidth(), image.getHeight());
+		g.dispose();
+		return image;
 	}
 
 	public static Icon getImg(File f) {
@@ -215,107 +192,61 @@ public class JCrutchUtils {
 
 	}
 
-	public static final BufferedImage ImageSetDue(BufferedImage image, Color color) {
+	public static Color getRandomColor(int minAlpha) {
 
-		// fix this
-		// L = 0.2126*R + 0.7152*G + 0.0722*B
-		// so something like
-		// pictureR.set(col, row, new Color(255 * L/255, 153 * L/255, 51 * L/255));
-
-		Graphics2D g = image.createGraphics();
-		g.drawImage(image, 0, 0, null);
-		g.setComposite(AlphaComposite.SrcAtop);
-		g.setColor(color);
-		g.fillRect(0, 0, image.getWidth(), image.getHeight());
-		g.dispose();
-		return image;
+		return new Color(random.nextInt(255), //
+				random.nextInt(255), //
+				random.nextInt(255), //
+				random.nextInt(255 - minAlpha) + minAlpha);
 	}
 
-	public static String getFileSizeString(float b) {
-		byte tims = 0;
-		while (b > 1024f) {
-			b /= 1024f;
-			tims++;
-			if (tims == 3) {
-				break;
+	public static void fadeToAlpha(DataBuffer imgData, byte sc) {
+
+		for (int j = 0; j < imgData.getSize(); j++) {
+			int pixel = imgData.getElem(j);
+
+			int a = (pixel >> 24) & 0xff;
+			imgData.setElem(j, 0);
+			if (a != 0) {
+				int r = (pixel >> 16) & 0xff;
+				int g = (pixel >> 8) & 0xff;
+				int b = pixel & 0xff;
+				if (a < 50) {
+					imgData.setElem(j, 0);
+				} else {
+					imgData.setElem(j, ((a -= sc) << 24) | (r << 16) | (g << 8) | b);
+				}
+
 			}
 
 		}
-		return b + "" + Data_Size[tims];
-
 	}
 
-	public static final void clearBG(Graphics g, Component com) {
-		Graphics2D gd = (Graphics2D) g;
-		gd.setBackground(ALPHA);
-		gd.clearRect(0, 0, com.getWidth(), com.getHeight());
-	}
+	// TODO Math shit
+	////////////////////////////////////////////////////////////////////////////////////////
 
-	public static final void clearBG(Graphics g, int x, int y, int w, int h) {
-		Graphics2D gd = (Graphics2D) g;
-		gd.setBackground(ALPHA);
-		gd.clearRect(x, y, w, h);
-	}
-
-	public static boolean t_fildChec(JTextField t) {
-		if (t.getText().trim().isEmpty()) {
-			return false;
+	public static double cliplerp(double point1, double point2, double alpha, int delta) {
+		if (Math.abs(point1 - point2) < delta) {
+			return point2;
 		}
-		return true;
+		return point1 + alpha * (point2 - point1);
 	}
-
-	public static boolean isSubPath(String par, String ch) {
-		if (ch.length() < par.length()) {
-			return false;
+	
+	public static double clapLerp(double point1, double point2, double alpha) {
+		if (Math.abs(point2 - point1) <= alpha) {
+			return point2;
 		}
-		if (ch.substring(0, par.length()).equals(par)) {
-			return true;
-		}
-
-		return false;
-
-	}
-
-	public static int scaleTrans(int cord, float scaler, int trans) {
-		return (int) (cord * scaler) - trans;
-	}
-
-	public static double map(double n, double start1, double stop1, double start2, double stop2) {
-		return ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2;
-	}
-
-	public static double lerp(double point1, double point2, double alpha) {
 		return point1 + alpha * (point2 - point1);
 	}
 
-	public static double badLerp(double tempV, double tempT, double step) {
-		if (Math.abs(tempT - tempV) >= step) {
-			return tempT > tempV ? tempV + step : tempV - step;
-		} else {
-			return tempT;
-		}
+	public static final double getAngleBetPoints(float x1, float y1, float x2, float y2) {
+		return Math.atan2(y1 - y2, x1 - x2);
+
 	}
 
-	public static int compSX(JComponent comp) {
-		return comp.getX() + comp.getWidth();
+	public static final double getDistBetPoints(float x1, float y1, float x2, float y2) {
+		return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
 	}
-
-	public static int compSY(JComponent comp) {
-		return comp.getY() + comp.getHeight();
-	}
-
-	// Curves but unfinished
-	public static double doElasticShit(double t, double b, double c, double d) {
-		// i cur cycle
-		// b start
-		// c path
-		// d cycles
-		double ts = (t /= d) * t;
-		double tc = ts * t;
-		return b + c * (33 * tc * ts + -106 * ts * ts + 126 * tc + -67 * ts + 15 * t);
-	}
-
-	// Some Math
 
 	public static final double shortAngleDist(double a0, double a1) {
 		double max = Math.PI * 2;
@@ -354,49 +285,97 @@ public class JCrutchUtils {
 
 	}
 
-	public static Color changeColorAlpha(Color t, int nAlpha) {
-		return new Color(t.getRed(), t.getGreen(), t.getBlue(), nAlpha);
+	// Curves but unfinished
+	public static double doElasticShit(double t, double b, double c, double d) {
+		// i cur cycle
+		// b start
+		// c path
+		// d cycles
+		double ts = (t /= d) * t;
+		double tc = ts * t;
+		return b + c * (33 * tc * ts + -106 * ts * ts + 126 * tc + -67 * ts + 15 * t);
 	}
 
-	public static String getTime(long ms) {
+	public static int scaleTrans(int cord, float scaler, int trans) {
+		return (int) (cord * scaler) - trans;
+	}
 
-		String formatM = "";
-		String formatS = "";
+	public static double map(double n, double start1, double stop1, double start2, double stop2) {
+		return ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2;
+	}
 
-		double mili = (ms / 1000);
-		double sec = (mili / 1000) % 60;
-		double min = (mili / 1000) / 60;
+	public static double lerp(double point1, double point2, double alpha) {
+		return point1 + alpha * (point2 - point1);
+	}
 
-		if (sec < 10) {
-			formatS = "0" + (int) sec;
+	public static double badLerp(double tempV, double tempT, double step) {
+		if (Math.abs(tempT - tempV) >= step) {
+			return tempT > tempV ? tempV + step : tempV - step;
 		} else {
-			formatS = (int) sec + "";
+			return tempT;
 		}
-		if (min < 10) {
-			formatM = "0" + (int) min;
-		} else {
-			formatM = (int) min + "";
-		}
-		return formatM + ":" + formatS;
 	}
 
-	public static <T> void println(T t) {
-		System.out.println("{Utils:} - " + t.toString());
+	public static float getProcentageS(float val, float max) {
+		return 100f / (max / val);
 	}
 
-	public static final void BeePBoop() {
-		Toolkit.getDefaultToolkit().beep();
-
-	}
-
-	public static final double getAngleBetPoints(float x1, float y1, float x2, float y2) {
+	public static final double getAngleBetP(float x1, float y1, float x2, float y2) {
 		return Math.atan2(y1 - y2, x1 - x2);
 
 	}
 
-	public static final double getDistBetPoints(float x1, float y1, float x2, float y2) {
-		return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+	public static int calculateTime(long fileSize, long readed, int speed) {
+		if (speed > 0) {
+			return (int) ((fileSize - readed) / speed);
+		}
+		return 0;
 	}
+
+	public static float getProcentage(char[] rans, char[] in) {
+		float corr = 0;
+
+		for (int i = 0; i < rans.length; i++) {
+			if (i < in.length) {
+				if (rans[i] == in[i]) {
+					corr++;
+				}
+			}
+		}
+		if (corr == 0) {
+			return 0;
+		}
+		float per = 100f / (rans.length / corr);
+		return per;
+
+	}
+
+	// TODO Random
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static final int getRandom(int dest) {
+		return random.nextInt(dest) - random.nextInt(dest);
+	}
+
+	public static int random(int b) {
+		return random.nextInt(b);
+	}
+
+	public static boolean getRandomChace(double chanceMul) {
+		return ((random.nextDouble() * 100) < chanceMul);
+	}
+
+	public static final int getRandomInBounds(int dest) {
+		return random.nextInt(dest) - random.nextInt(dest);
+	}
+
+	public static boolean getRandom(double chanceMul) {
+		return ((random.nextDouble() * 100) < chanceMul);
+
+	}
+
+	// TODO ThreadLockEr
+	////////////////////////////////////////////////////////////////////////////////////////
 
 	public static void sleep(long milis) {
 		try {
@@ -414,29 +393,51 @@ public class JCrutchUtils {
 		}
 	}
 
-	public static final int getRandom(int dest) {
-		return random.nextInt(dest) - random.nextInt(dest);
-	}
+	public static void locker(Object lock, long delay) {
 
-	public static int random(int b) {
-		return random.nextInt(b);
-	}
-
-	public static final Color getRandomColor() {
-		return new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255), 140);
-	}
-
-	public static final int[] GetfilledArrey(int how, int leg) {
-		int[] ar = new int[leg];
-		Arrays.fill(ar, how);
-		return ar;
+		synchronized (lock) {
+			try {
+				lock.wait(delay);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 
 	}
 
-	public static void popUpWindow(Window comp) {
-		comp.setAlwaysOnTop(true);
-		comp.setAlwaysOnTop(false);
+	public static void unlock(Object lock) {
+		synchronized (lock) {
+			lock.notify();
+		}
+	}
 
+	public static void locker(Object lock) {
+
+		synchronized (lock) {
+			try {
+				lock.wait();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	// TODO Swing someshit
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static int compSX(JComponent comp) {
+		return comp.getX() + comp.getWidth();
+	}
+
+	public static int compSY(JComponent comp) {
+		return comp.getY() + comp.getHeight();
+	}
+
+	public static boolean t_fildChec(JTextField t) {
+		if (t.getText().trim().isEmpty()) {
+			return false;
+		}
+		return true;
 	}
 
 	public static final void AmaZingFixSize(Window trg, int w, int h) {
@@ -449,6 +450,12 @@ public class JCrutchUtils {
 		trg.pack();
 		trg.remove(fuk);
 		/////////////////////////////////////////
+
+	}
+
+	public static void popUpWindow(Window comp) {
+		comp.setAlwaysOnTop(true);
+		comp.setAlwaysOnTop(false);
 
 	}
 
@@ -480,6 +487,56 @@ public class JCrutchUtils {
 		t.setLayout(null);
 	}
 
+	public static int getActualWidth(Window trg) {
+		return trg.getWidth() - (trg.getInsets().left + trg.getInsets().right);
+	}
+
+	public static int getActualHeight(Window trg) {
+		return trg.getHeight() - (trg.getInsets().bottom + trg.getInsets().top);
+	}
+
+	public static final void setSettings() {
+
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+		System.setProperty("sun.awt.noerasebackground", "true");
+		System.setProperty("sun.java2d.opengl", "true");
+		UIManager.put("FileChooser.readOnly", true);
+
+	}
+
+	// TODO FILES
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static boolean isSubPath(String par, String ch) {
+		if (ch.length() < par.length()) {
+			return false;
+		}
+		if (ch.substring(0, par.length()).equals(par)) {
+			return true;
+		}
+
+		return false;
+
+	}
+
+	public static String getFileSizeString(float b) {
+		byte tims = 0;
+		while (b > 1024f) {
+			b /= 1024f;
+			tims++;
+			if (tims == 3) {
+				break;
+			}
+
+		}
+		return b + "" + Data_Size[tims];
+
+	}
+
 	public static boolean checkFile(String path) {
 		if (path == null || path.trim().isEmpty()) {
 			return false;
@@ -496,109 +553,16 @@ public class JCrutchUtils {
 
 	}
 
-	public static Color getRgbMappedColor(short stepCount, int alpha) {
-
-		// 1530
-
-		short cycle = (short) (stepCount / 255 % 6);
-		short a = (short) (stepCount % 255);
-		short prev = (short) (255 - a);
-
-		switch (cycle) {
-
-		case 0:
-			return new Color(255, 0, a, alpha);
-		case 1:
-			return new Color(prev, 0, 255, alpha);
-		case 2:
-			return new Color(0, a, 255, alpha);
-		case 3:
-			return new Color(0, 255, prev, alpha);
-		case 4:
-			return new Color(a, 255, 0, alpha);
-		case 5:
-			return new Color(255, prev, 0, alpha);
-
-		}
-		return new Color(0, 0, 0);
-	}
-
-	public static int getActualWidth(Window trg) {
-		return trg.getWidth() - (trg.getInsets().left + trg.getInsets().right);
-	}
-
-	public static int getActualHeight(Window trg) {
-		return trg.getHeight() - (trg.getInsets().bottom + trg.getInsets().top);
-	}
-
 	public static String getExecuteName() {
 		return new File(JCrutchUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getName();
-
 	}
 
 	public static File getExecuteFile() {
 		return new File(JCrutchUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-
 	}
 
-	public static final void setSettings() {
-
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e1) {
-			e1.printStackTrace();
-		}
-		System.setProperty("sun.awt.noerasebackground", "true");
-		System.setProperty("sun.java2d.opengl", "true");
-		UIManager.put("FileChooser.readOnly", true);
-
-	}
-
-	public static int CalculateSolidPixels(BufferedImage img) {
-		int solidPixels = 0;
-		int[] pixels = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
-
-		for (int i : pixels) {
-			int a = (i >> 24) & 0xff;
-			if (a > 50) {
-				solidPixels++;
-			}
-		}
-		pixels = null;
-		return solidPixels;
-	}
-
-	public static Icon getMiniFileIcon(File f) {
-		Icon i = FileSystemView.getFileSystemView().getSystemIcon(f);
-		BufferedImage out = new BufferedImage(16, 16, BufferedImage.TYPE_4BYTE_ABGR);
-		i.paintIcon(null, out.getGraphics(), 0, 0);
-
-		return i;
-	}
-
-	public static final boolean checkMask(int modifiers, int mask) {
-		return ((modifiers & mask) == mask);
-	}
-
-	public static void printTBinaryString(long humIn, int countOfBits) {
-		StringBuffer buff = new StringBuffer();
-		long temp = 0;
-		for (int i = countOfBits - 1; i > -1; i--) {
-			temp = humIn >> i;
-			if ((temp & 0x1) != 0) {
-				buff.append(1);
-			} else {
-				buff.append(0);
-			}
-
-			if (i % 8 == 0 && i != 0) {
-				buff.append("_");
-			}
-
-		}
-		System.out.println(buff.toString());
-
-	}
+	// TODO Sound
+	////////////////////////////////////////////////////////////////////////////////////////
 
 	public static void displayMixerInfo() {
 		Mixer.Info[] mixersInfo = AudioSystem.getMixerInfo();
@@ -638,7 +602,6 @@ public class JCrutchUtils {
 
 	public final static float DbMapping(float db) {
 		// -0.2f - 1.0
-
 		// For bands
 		return (float) (2.5220207857061455181125E-01 * Math.exp(8.0178361802353992349168E-02 * db)
 				- 2.5220207852836562523180E-01);
@@ -664,72 +627,9 @@ public class JCrutchUtils {
 		return array;
 	}
 
-	public static boolean inRect(double px, double py, double x, double y, double w, double h) {
+	// TODO File Text Working
+	////////////////////////////////////////////////////////////////////////////////////////
 
-		if (px >= x && px <= (x + w)) {
-			if (py >= y && py <= (y + h)) {
-				return true;
-
-			}
-		}
-		return false;
-
-	}
-
-	public static void dueImageVerySlow(BufferedImage in, BufferedImage out, Color tcolor) {
-
-		int targ = tcolor.getRGB();
-		int width = in.getWidth();
-		int height = in.getHeight();
-
-		for (int col = 0; col < width; col++) {
-			for (int row = 0; row < height; row++) {
-
-				int color = in.getRGB(col, row);
-
-				int a = (color >> 24) & 0xff;
-				int r = (color >> 16) & 0xff;
-				int g = (color >> 8) & 0xff;
-				int b = color & 0xff;
-				// Lums somsing magic shit and somsing else
-				int L = (int) (0.2126f * r + 0.7152f * g + 0.0722f * b);
-
-				r = L * (targ >> 16 & 0xff) / 255;
-				g = L * (targ >> 8 & 0xff) / 255;
-				b = L * (targ & 0xff) / 255;
-
-				int c = (a << 24) | (r << 16) | (g << 8) | b;
-
-				out.setRGB(col, row, c);
-
-			}
-		}
-	}
-
-	public static double cliplerp(double point1, double point2, double alpha, int delta) {
-		if (Math.abs(point1 - point2) < delta) {
-			return point2;
-		}
-
-		return point1 + alpha * (point2 - point1);
-	}
-
-	public static boolean checkArrays(byte[] a1, byte[] a2) {
-
-		if (a1.length != a2.length) {
-			return false;
-		}
-		for (int i = 0; i < a1.length; i++) {
-			if (a1[i] != a2[i]) {
-				return false;
-			}
-
-		}
-		return true;
-
-	}
-
-	// File Text Working
 	public static byte getUTFCharLeng(int charHeader) {
 		int s = ((charHeader & 0xF0) >> 4);
 		if (s == 0xC) {
@@ -769,7 +669,13 @@ public class JCrutchUtils {
 
 	}
 
-	// Some byte things
+	// TODO Some byte things
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static final boolean checkMask(int modifiers, int mask) {
+		return ((modifiers & mask) == mask);
+	}
+
 	public static byte[] toByteArray(long value, int byteleng) {
 		byte[] data = new byte[byteleng];
 		for (int i = 0; i < data.length; i++) {
@@ -807,37 +713,8 @@ public class JCrutchUtils {
 		return outBuffer.toString();
 	}
 
-	public class TimeTracer {
-		long time;
-		String nam;
-
-		public TimeTracer(String name) {
-			time = System.currentTimeMillis();
-			nam = name;
-		}
-
-		public TimeTracer() {
-			time = System.currentTimeMillis();
-			nam = "No Name";
-		}
-
-		public final void finish() {
-			System.out.println("TimeTracer: " + nam);
-			System.out.println(System.currentTimeMillis() - time + ":Ms\n");
-		}
-
-	}
-
-	public static boolean getRandomChace(double chanceMul) {
-		return ((random.nextDouble() * 100) < chanceMul);
-
-	}
-
-	public static float getProcentageS(float val, float max) {
-		return 100f / (max / val);
-	}
-
 	// Random Access file things
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public static void cutOf(long from, long to, RandomAccessFile f) throws IOException {
 		cut(from, to - from, f);
@@ -896,14 +773,126 @@ public class JCrutchUtils {
 
 	}
 
+	// TODO Extra
+	////////////////////////////////////////////////////////////////////////////////////////
+	public static final void DoBeep() {
+		tools.beep();
+	}
+
+	public static boolean checkArrays(byte[] a1, byte[] a2) {
+		if (a1.length != a2.length) {
+			return false;
+		}
+		for (int i = 0; i < a1.length; i++) {
+			if (a1[i] != a2[i]) {
+				return false;
+			}
+
+		}
+		return true;
+	}
+
+	public static final int[] GetfilledArrey(int how, int leg) {
+		int[] ar = new int[leg];
+		Arrays.fill(ar, how);
+		return ar;
+
+	}
+
+	public static <T> void println(T t) {
+		System.out.println("{Utils:} - " + t.toString());
+	}
+
+	public static String getTime(long ms) {
+
+		String formatM = "";
+		String formatS = "";
+
+		double mili = (ms / 1000);
+		double sec = (mili / 1000) % 60;
+		double min = (mili / 1000) / 60;
+
+		if (sec < 10) {
+			formatS = "0" + (int) sec;
+		} else {
+			formatS = (int) sec + "";
+		}
+		if (min < 10) {
+			formatM = "0" + (int) min;
+		} else {
+			formatM = (int) min + "";
+		}
+		return formatM + ":" + formatS;
+	}
+
+	public static boolean inRect(double px, double py, double x, double y, double w, double h) {
+		if (px >= x && px <= (x + w)) {
+			if (py >= y && py <= (y + h)) {
+				return true;
+
+			}
+		}
+		return false;
+
+	}
+
+	public static void closer(Closeable cl) {
+		try {
+			cl.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void updateScreens() {
+		screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+
+	}
+
+	public static Rectangle getRandomScreenRect() {
+		if (screens != null) {
+			return screens[random.nextInt(screens.length)].getDefaultConfiguration().getBounds();
+		}
+		return null;
+	}
+
+	public static String getTime(short minu) {
+		String formatH = "";
+		short min = (short) (minu % 60);
+		short hors = (short) (minu / 60);
+		if (hors > 0) {
+			formatH = hors + "|";
+		}
+		return formatH + min;
+	}
+
+	// TODO CLasses
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	public class TimeTracer {
+		long time;
+		String nam;
+
+		public TimeTracer(String name) {
+			time = System.currentTimeMillis();
+			nam = name;
+		}
+
+		public TimeTracer() {
+			time = System.currentTimeMillis();
+			nam = "No Name";
+		}
+
+		public final void finish() {
+			System.out.println("TimeTracer: " + nam);
+			System.out.println(System.currentTimeMillis() - time + ":Ms\n");
+		}
+
+	}
+
 }
-//int ind = 1;
-//for (int i = fuker.length - 1; i >= ind; i--) {
-//	if (i + 1 <= fuker.length - 1) {
-//		fuker[i + 1] = fuker[i];
-//	}
-//
-//}
+
+///may be do static Mhetods
 
 //
 //UserDefinedFileAttributeView userDefView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
