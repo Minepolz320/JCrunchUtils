@@ -3,6 +3,7 @@ package mainPack.Utility;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -11,6 +12,10 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
@@ -42,11 +47,15 @@ public class JCrutchUtils {
 	public static final String[] Data_Size = { "B", "Kb", "Mb", "Gb" };
 	static GraphicsDevice[] screens;
 	static Toolkit tools = Toolkit.getDefaultToolkit();
+	static Desktop desktop = Desktop.getDesktop();
 	public static Random random = new Random();
+
+	public static Clipboard ClipBoard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
 	// TODO Graphics Things
 	////////////////////////////////////////////////////////////////////////////////////////
 	public static Color changeColorAlpha(Color t, int nAlpha) {
+
 		return new Color(t.getRed(), t.getGreen(), t.getBlue(), nAlpha);
 	}
 
@@ -143,6 +152,12 @@ public class JCrutchUtils {
 		gd.clearRect(x, y, w, h);
 	}
 
+	public static final void clearBG(Graphics g, int w, int h) {
+		Graphics2D gd = (Graphics2D) g;
+		gd.setBackground(ALPHA);
+		gd.clearRect(0, 0, w, h);
+	}
+
 	public static final BufferedImage ImageSetDue(BufferedImage image, Color color) {
 
 		// fix this
@@ -231,7 +246,7 @@ public class JCrutchUtils {
 		}
 		return point1 + alpha * (point2 - point1);
 	}
-	
+
 	public static double clapLerp(double point1, double point2, double alpha) {
 		if (Math.abs(point2 - point1) <= alpha) {
 			return point2;
@@ -864,6 +879,34 @@ public class JCrutchUtils {
 			formatH = hors + "|";
 		}
 		return formatH + min;
+	}
+
+	public static void ShowFolder(File f) {
+		try {
+			desktop.open(f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	// TODO Some ClipBoard
+	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static void putString(String data) {
+		StringSelection strSel = new StringSelection(data);
+		ClipBoard.setContents(strSel, null);
+
+	}
+
+	public static String getString() {
+		Transferable t = ClipBoard.getContents(null);
+		try {
+			if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+				return (String) t.getTransferData(DataFlavor.stringFlavor);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	// TODO CLasses
