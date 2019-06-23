@@ -1,9 +1,10 @@
-package mainPack.Utility;
+package Utils;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -36,6 +37,8 @@ import javax.sound.sampled.Mixer;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
@@ -54,6 +57,19 @@ public class JCrutchUtils {
 
 	// TODO Graphics Things
 	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static int Centrate(int OcompHW, int TcompHW) {
+		return (OcompHW / 2) - (TcompHW / 2);
+	}
+
+	public int HScaled(int v, float scale) {
+		return (int) ((v * scale) / 2);
+	}
+
+	public static int Scale(int v, float scale) {
+		return (int) (v * scale);
+	}
+
 	public static Color changeColorAlpha(Color t, int nAlpha) {
 
 		return new Color(t.getRed(), t.getGreen(), t.getBlue(), nAlpha);
@@ -790,6 +806,18 @@ public class JCrutchUtils {
 
 	// TODO Extra
 	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static int limitValue(int val, int min, int max) {
+		if (val > max) {
+			return max;
+		}
+
+		if (val < min) {
+			return min;
+		}
+		return val;
+	}
+
 	public static final void DoBeep() {
 		tools.beep();
 	}
@@ -848,6 +876,29 @@ public class JCrutchUtils {
 			}
 		}
 		return false;
+
+	}
+
+	public static JFrame fastFrame(String title, int w, int h, int CloaseOper) {
+		JFrame f = new JFrame(title);
+		f.setDefaultCloseOperation(CloaseOper);
+		f.setResizable(false);
+		Fuck_FrameSzie(f, w, h);
+		f.setLocationRelativeTo(null);
+		f.setLayout(null);
+		return f;
+
+	}
+
+	public static JDialog fastJdialog(String title, int w, int h, int CloaseOper, Window ovner, ModalityType modalt) {
+		JDialog f = new JDialog(ovner, modalt);
+		f.setTitle(title);
+		f.setDefaultCloseOperation(CloaseOper);
+		f.setResizable(false);
+		Fuck_FrameSzie(f, w, h);
+		f.setLocationRelativeTo(f.getOwner());
+		f.setLayout(null);
+		return f;
 
 	}
 
