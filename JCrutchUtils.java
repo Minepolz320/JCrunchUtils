@@ -17,6 +17,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
@@ -25,6 +27,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -34,24 +37,29 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.Line;
 import javax.sound.sampled.Mixer;
+import javax.swing.AbstractAction;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileSystemView;
 
 public class JCrutchUtils {
+	static final DecimalFormat FLOAT_FORMATER = new DecimalFormat("#.##");
 	static final int BUFFER_SIZE = 2048;
 	public static final Color ALPHA = new Color(0, true);
-	public static final String[] Data_Size = { "B", "Kb", "Mb", "Gb" };
+	public static final String[] Data_Size = { " B", " Kb", " Mb", " Gb" };
 	static GraphicsDevice[] screens;
 	static Toolkit tools = Toolkit.getDefaultToolkit();
 	static Desktop desktop = Desktop.getDesktop();
 	public static Random random = new Random();
+	private static boolean PooP_started = false;
 
 	public static Clipboard ClipBoard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
@@ -564,7 +572,8 @@ public class JCrutchUtils {
 			}
 
 		}
-		return b + "" + Data_Size[tims];
+
+		return FLOAT_FORMATER.format(b) + Data_Size[tims];
 
 	}
 
@@ -806,6 +815,67 @@ public class JCrutchUtils {
 
 	// TODO Extra
 	////////////////////////////////////////////////////////////////////////////////////////
+
+	public static void addKeyStroke(String name, JDialog w, KeyStroke ks, ActionListener l) {
+		w.getRootPane().getInputMap(JRootPane.WHEN_IN_FOCUSED_WINDOW).put(ks, name);
+
+		// Warp to lamda
+		w.getRootPane().getActionMap().put(name, new AbstractAction() {
+			private static final long serialVersionUID = 1L;
+
+			public void actionPerformed(ActionEvent e) {
+				l.actionPerformed(e);
+			}
+		});
+
+	}
+
+	public static void addKeyStroke(String name, JComponent c, KeyStroke ks, ActionListener l) {
+		c.getInputMap().put(ks, name);
+		// Warp to lamda
+		c.getActionMap().put(name, new AbstractAction() {
+			private static final long serialVersionUID = 1L;
+
+			public void actionPerformed(ActionEvent e) {
+				l.actionPerformed(e);
+			}
+		});
+
+	}
+
+	public static void addKeyStroke(String name, JFrame w, KeyStroke ks, ActionListener l) {
+		w.getRootPane().getInputMap(JRootPane.WHEN_IN_FOCUSED_WINDOW).put(ks, name);
+		// Warp to lamda
+		w.getRootPane().getActionMap().put(name, new AbstractAction() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				l.actionPerformed(e);
+			}
+		});
+
+	}
+
+	public static void runPoopGrabber() {
+		if (!PooP_started) {
+			PooP_started = true;
+			new Thread() {
+				@Override
+				public void run() {
+					setName("PoopGrabb_Thrad");
+					setPriority(MIN_PRIORITY);
+					while (true) {
+						JCrutchUtils.sleep(10000);
+						System.gc();
+					}
+
+				}
+			}.start();
+
+		}
+
+	}
 
 	public static int limitValue(int val, int min, int max) {
 		if (val > max) {
